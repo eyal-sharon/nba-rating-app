@@ -1,0 +1,7 @@
+nba_api
+numpy
+Flask
+# json
+scikit-learn
+# math
+# pickle

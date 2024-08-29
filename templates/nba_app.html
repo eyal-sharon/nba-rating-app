@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Rating Predictor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .company-heading {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+            display: inline-block;
+            background-color: beige;
+            border-radius: 5px;
+
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            background-color: #0056b3;
+            padding: 20px;
+            margin-left: 50px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .action-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color:darkgreen;
+            color: #ffffff;
+            font-size: 16px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .revert-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color:darkslategray;
+            color: #ffffff;
+            font-size: 16px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+        .revert-button:hover {
+            background-color: #000000;
+        }
+
+        table, tr, th, td{
+            width: fit-content;
+            align-content: center;
+        }
+
+    </style>
+
+</head>
+
+ 
+
+<body>
+
+    <div id="blue" style="background-color: darkgreen">
+     <center>
+     <h1 class="company-heading">What's Your Rating?</h1>
+    </center>
+    </div>
+    
+    <div class="container" style="text-align: center;">
+
+        <p>Find Your Player</p>
+
+        <select id="team">  </select>
+
+        <select id="choice">  </select>
+
+        <center>
+
+        <p id="stats" style="display: block; align-items: center;"> </p>
+
+        </center>
+
+        <p id="result"> </p>
+        <a href="#", class="action-button">Calculate Rating</a>
+        <a href="#", class="revert-button", style="display:none">Revert Stats</a>
+
+    </div>
+
+    <script>
+
+    // revert when clicking button
+    revert = document.getElementsByClassName('revert-button')[0]
+    revert.addEventListener('click', () => {
+            const player = playerListElement.value;
+            document.getElementById('result').innerHTML =  player
+
+            fetch(`/get_stats?player=${(player)}`)
+
+            .then(response => response.text())
+
+            .then(result => {
+                document.getElementById('stats').innerHTML =  result
+            })
+            revert.style.display = 'none'
+    })
+ 
+
+    // get inputs and ask model for ranking
+    const machine = document.getElementsByClassName("action-button")[0]
+    machine.addEventListener('click', () => {
+        const player = playerListElement.value;
+        console.log('searching')
+
+        W = document.getElementById('W').value
+        PTS = document.getElementById('PTS').value
+        REB = document.getElementById('REB').value
+        AST = document.getElementById('AST').value
+        STL = document.getElementById('STL').value
+        BLK = document.getElementById('BLK').value
+        GP = document.getElementById('GP').value
+        const url = `/get_ranking?player=${player}&W=${W}&PTS=${PTS}&REB=${REB}&AST=${AST}&STL=${STL}&BLK=${BLK}&GP=${GP}`;
+        fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (Number(data) > 100)
+                data = "100"
+            
+            document.getElementById("result").innerHTML = player + " | ranking: " + data
+        })
+
+        rev = document.getElementsByClassName("revert-button")[0]
+        rev.style.display = 'inline-block'
+    })
+
+
+    // get the teams
+    const teamList = document.getElementById('team');
+    fetch('/get_teams')
+    .then(response => response.json())
+    .then(data => {
+        const teams = data;
+        const holder = document.createElement('option');
+        holder.value = 'Default';
+        holder.textContent = 'Select a team'; // Customize the placeholder text
+        teamList.appendChild(holder);
+        teams.forEach(playerName => {
+            const option = document.createElement('option');
+            option.value = playerName;
+            option.textContent = playerName;
+            teamList.appendChild(option);
+        });
+    })
+
+    // chosing the team, get the list of players
+    // make it so the boxes show up if you change the team,
+    teamList.addEventListener('change', () => {
+        revert = document.getElementsByClassName('revert-button')[0]
+        revert.style.display = 'none'
+
+        const team = teamList.value;
+        document.getElementById("result").innerHTML = ""
+        document.getElementById("stats").innerHTML = ""
+        if (team == 'Default')
+            url = `/get_players`
+        else
+            url = `/filter_players?team=${team}`;
+
+
+        fetch(url)
+        .then(response => response.json())
+        .then(data => {
+        playerListElement.innerHTML = ''
+        const playerNames = data; // Assuming data is an array of player names
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = 'Select a player'; // Customize the placeholder text
+        playerListElement.appendChild(placeholderOption);
+
+        playerNames.forEach(playerName => {
+            const optionElement = document.createElement('option');
+            optionElement.value = playerName;
+            optionElement.textContent = playerName;
+            playerListElement.appendChild(optionElement);
+        });
+    });
+})
+
+    //get alll the players
+    const playerListElement = document.getElementById('choice');
+    fetch('/get_players')
+    .then(response => response.json())
+    .then(data => {
+
+        const playerNames = data; // Assuming data is an array of player names
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = 'Select a player'; // Customize the placeholder text
+        playerListElement.appendChild(placeholderOption);
+
+        playerNames.forEach(playerName => {
+            const optionElement = document.createElement('option');
+            optionElement.value = playerName;
+            optionElement.textContent = playerName;
+            playerListElement.appendChild(optionElement);
+        });
+    });
+
+    // choose a player, then show their stats
+    playerListElement.addEventListener('change', () => {
+
+        revert = document.getElementsByClassName('revert-button')[0]
+        revert.style.display = 'none'
+
+            const player = playerListElement.value;
+            document.getElementById('result').innerHTML =  player
+            fetch(`/get_stats?player=${(player)}`)
+            .then(response => response.text())
+            .then(result => {
+                document.getElementById('stats').innerHTML =  result
+            })
+    });
+
+</script>
+
+</body>
+
+</html>
